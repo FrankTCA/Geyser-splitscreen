@@ -81,6 +81,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -90,12 +91,18 @@ public class GeyserSession implements CommandSender {
 
     private final GeyserConnector connector;
     private final UpstreamSession upstream;
+    /**
+     * Id used in protocol to refer to primary client (0) or splitscreen subclients (>0)
+     */ 
+    private int clientId;
     private RemoteServer remoteServer;
     private Client downstream;
     @Setter
     private AuthData authData;
     @Setter
     private BedrockClientData clientData;
+    @Setter
+    private ECPublicKey identityPublicKey;
 
     private PlayerEntity playerEntity;
     private PlayerInventory inventory;
@@ -242,9 +249,10 @@ public class GeyserSession implements CommandSender {
 
     private MinecraftProtocol protocol;
 
-    public GeyserSession(GeyserConnector connector, BedrockServerSession bedrockServerSession) {
+    public GeyserSession(GeyserConnector connector, BedrockServerSession bedrockServerSession, int clientId) {
         this.connector = connector;
-        this.upstream = new UpstreamSession(bedrockServerSession);
+        this.upstream = new UpstreamSession(bedrockServerSession, clientId);
+        this.clientId = clientId;
 
         this.chunkCache = new ChunkCache(this);
         this.entityCache = new EntityCache(this);
@@ -370,7 +378,7 @@ public class GeyserSession implements CommandSender {
                                 encrypted = EncryptionUtil.encryptBedrockData(publicKey, new BedrockData(
                                         clientData.getGameVersion(),
                                         authData.getName(),
-                                        authData.getXboxUUID(),
+                                        authData.getUUID().toString(),
                                         clientData.getDeviceOS().ordinal(),
                                         clientData.getLanguageCode(),
                                         clientData.getCurrentInputMode().ordinal(),
@@ -500,10 +508,6 @@ public class GeyserSession implements CommandSender {
 
     public void close() {
         disconnect(LanguageUtils.getPlayerLocaleString("geyser.network.close", getClientData().getLanguageCode()));
-    }
-
-    public void setAuthenticationData(AuthData authData) {
-        this.authData = authData;
     }
 
     @Override

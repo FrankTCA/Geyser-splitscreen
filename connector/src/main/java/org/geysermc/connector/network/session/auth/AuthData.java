@@ -27,11 +27,13 @@ package org.geysermc.connector.network.session.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
+@ToString
 public class AuthData {
 
     private String name;

@@ -106,8 +106,11 @@ public class ConnectorServerEventHandler implements BedrockServerEventHandler {
 
     @Override
     public void onSessionCreation(BedrockServerSession bedrockServerSession) {
+        // Initial session created is always the main client, so client id 0
+        int clientId = 0;
+
         bedrockServerSession.setLogging(true);
-        bedrockServerSession.setPacketHandler(new UpstreamPacketHandler(connector, new GeyserSession(connector, bedrockServerSession)));
+        bedrockServerSession.setPacketHandler(new UpstreamPacketHandler(connector, new GeyserSession(connector, bedrockServerSession, clientId)));
         // Set the packet codec to default just in case we need to send disconnect packets.
         bedrockServerSession.setPacketCodec(BedrockProtocol.DEFAULT_BEDROCK_CODEC);
     }
