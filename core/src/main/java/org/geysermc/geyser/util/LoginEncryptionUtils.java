@@ -28,7 +28,8 @@ package org.geysermc.geyser.util;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.raphimc.minecraftauth.step.msa.StepMsaDeviceCode;
+import com.github.steveice10.mc.auth.service.MsaAuthenticationService;
+
 import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ServerToClientHandshakePacket;
 import org.cloudburstmc.protocol.bedrock.packet.SubClientLoginPacket;
