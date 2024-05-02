@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.raphimc.minecraftauth.step.msa.StepMsaDeviceCode;
 import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ServerToClientHandshakePacket;
+import org.cloudburstmc.protocol.bedrock.packet.SubClientLoginPacket;
 import org.cloudburstmc.protocol.bedrock.util.ChainValidationResult;
 import org.cloudburstmc.protocol.bedrock.util.ChainValidationResult.IdentityData;
 import org.cloudburstmc.protocol.bedrock.util.EncryptionUtils;
@@ -40,6 +41,8 @@ import org.geysermc.cumulus.response.SimpleFormResponse;
 import org.geysermc.cumulus.response.result.FormResponseResult;
 import org.geysermc.cumulus.response.result.ValidFormResponseResult;
 import org.geysermc.geyser.GeyserImpl;
+import org.geysermc.geyser.api.network.AuthType;
+import org.geysermc.geyser.configuration.GeyserConfiguration.ISplitscreenUserInfo;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.auth.AuthData;
 import org.geysermc.geyser.session.auth.BedrockClientData;
@@ -52,30 +55,36 @@ import java.security.PublicKey;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+
 public class LoginEncryptionUtils {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
     private static boolean HAS_SENT_ENCRYPTION_MESSAGE = false;
 
     public static void encryptPlayerConnection(GeyserSession session, LoginPacket loginPacket) {
-        encryptConnectionWithCert(session, loginPacket.getExtra(), loginPacket.getChain());
+        encryptConnectionWithCert(session, loginPacket.getExtra(), loginPacket.getChain(), true);
+    }
+    
+    public static void encryptPlayerConnection(GeyserSession session, SubClientLoginPacket loginPacket) {
+        encryptConnectionWithCert(session, loginPacket.getExtra(), loginPacket.getChain(),false);
     }
 
-    private static void encryptConnectionWithCert(GeyserSession session, String clientData, List<String> certChainData) {
+    private static void encryptConnectionWithCert(GeyserSession session, String clientData, List<String> certChainData, boolean normalLogin) {
         try {
             GeyserImpl geyser = session.getGeyser();
 
+        
             ChainValidationResult result = EncryptionUtils.validateChain(certChainData);
 
             geyser.getLogger().debug(String.format("Is player data signed? %s", result.signed()));
 
-            if (!result.signed() && !session.getGeyser().getConfig().isEnableProxyConnections()) {
+            if (normalLogin && !result.signed() && !session.getGeyser().getConfig().isEnableProxyConnections()) {
                 session.disconnect(GeyserLocale.getLocaleStringLog("geyser.network.remote.invalid_xbox_account"));
                 return;
             }
 
-            IdentityData extraData = result.identityClaims().extraData;
-            session.setAuthenticationData(new AuthData(extraData.displayName, extraData.identity, extraData.xuid));
+            boolean allowMappingOfProfileUsers = geyser.getConfig().getSplitscreen().isAllowMappingOfProfileUsers();
+            session.setAuthenticationData(getAuthData(geyser,normalLogin || !allowMappingOfProfileUsers, result.identityClaims().extraData));
             session.setCertChainData(certChainData);
 
             PublicKey identityPublicKey = result.identityClaims().parsedIdentityPublicKey();
@@ -85,8 +94,15 @@ public class LoginEncryptionUtils {
                 throw new IllegalStateException("Client data isn't signed by the given chain data");
             }
 
+            if (!normalLogin)
+            {
+                session.setClientData(session.getPrimaryGeyserSession().getClientData());
+                return;
+            }
+
             JsonNode clientDataJson = JSON_MAPPER.readTree(clientDataPayload);
             BedrockClientData data = JSON_MAPPER.convertValue(clientDataJson, BedrockClientData.class);
+
             data.setOriginalString(clientData);
             session.setClientData(data);
 
@@ -105,6 +121,37 @@ public class LoginEncryptionUtils {
             throw new RuntimeException("Unable to complete login", ex);
         }
     }
+
+    private static AuthData getAuthData(GeyserImpl geyser, boolean disableMapping, IdentityData extraData) {
+
+        if (disableMapping || (extraData.xuid != null && extraData.xuid.length() !=0))
+        {
+            return new AuthData(extraData.displayName, extraData.identity, extraData.xuid);
+        }
+
+        ISplitscreenUserInfo userConfig = geyser.getConfig().getSplitscreen().getUsers().get(extraData.displayName);
+
+        if (userConfig == null)
+        {
+            if (geyser.getConfig().getRemote().authType() == AuthType.FLOODGATE)
+            {
+                geyser.getLogger().info(
+                        """
+                        Add the following user to the Geyser splitscreen config to allow them to play via splitscreen:
+                        
+                            Profile Username (Change this):
+                              bedrock-username: %s
+                              xuid: %s
+                        """.formatted(extraData.displayName, extraData.xuid)
+                        );
+            }
+            return new AuthData(extraData.displayName, extraData.identity, extraData.xuid);
+        }
+
+        return new AuthData(userConfig.getBedrockUsername(), extraData.identity, userConfig.getXuid());
+    }
+
+
 
     private static void startEncryptionHandshake(GeyserSession session, PublicKey key) throws Exception {
         KeyPair serverKeyPair = EncryptionUtils.createKeyPair();

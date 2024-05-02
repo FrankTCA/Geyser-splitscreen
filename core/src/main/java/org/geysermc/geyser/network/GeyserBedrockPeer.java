@@ -27,7 +27,10 @@ package org.geysermc.geyser.network;
 
 import io.netty.channel.Channel;
 import org.cloudburstmc.protocol.bedrock.BedrockPeer;
+import org.cloudburstmc.protocol.bedrock.BedrockServerSession;
+import org.cloudburstmc.protocol.bedrock.BedrockSession;
 import org.cloudburstmc.protocol.bedrock.BedrockSessionFactory;
+import org.geysermc.geyser.session.GeyserSession;
 
 import java.net.SocketAddress;
 
@@ -45,5 +48,26 @@ public class GeyserBedrockPeer extends BedrockPeer {
 
     public void setProxiedAddress(SocketAddress proxiedAddress) {
         this.proxiedAddress = proxiedAddress;
+    }
+
+    public void removeSubclientSession(BedrockSession session)
+    {
+        if (!session.isSubClient())
+        {
+            return;
+        }
+        removeSession(session);
+    }
+
+    private BedrockServerSession getPrimaryBedrockServerSession()
+    {
+        return (BedrockServerSession)this.sessions.get(0);
+    }
+
+    public GeyserSession getPrimaryGeyser()
+    {
+        UpstreamPacketHandler packetHandler = (UpstreamPacketHandler) getPrimaryBedrockServerSession().getPacketHandler();
+
+        return packetHandler.session;
     }
 }

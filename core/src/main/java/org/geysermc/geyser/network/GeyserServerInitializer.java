@@ -64,8 +64,12 @@ public class GeyserServerInitializer extends BedrockServerInitializer {
             bedrockServerSession.setLogging(true);
             GeyserSession session = new GeyserSession(this.geyser, bedrockServerSession, this.eventLoopGroup.next());
 
-            Channel channel = bedrockServerSession.getPeer().getChannel();
-            channel.pipeline().addAfter(BedrockPacketCodec.NAME, InvalidPacketHandler.NAME, new InvalidPacketHandler(session));
+            if (!bedrockServerSession.isSubClient())
+            {
+                // Only add the InvalidPacketHandler on the primary client.
+                Channel channel = bedrockServerSession.getPeer().getChannel();
+                channel.pipeline().addAfter(BedrockPacketCodec.NAME, InvalidPacketHandler.NAME, new InvalidPacketHandler(session));
+            }
 
             bedrockServerSession.setPacketHandler(new UpstreamPacketHandler(this.geyser, session));
         } catch (Throwable e) {

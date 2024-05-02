@@ -36,6 +36,7 @@ import org.geysermc.geyser.text.GeyserLocale;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 public interface GeyserConfiguration {
     /**
@@ -49,6 +50,8 @@ public interface GeyserConfiguration {
     IBedrockConfiguration getBedrock();
 
     IRemoteConfiguration getRemote();
+
+    ISplitscreenConfiguration getSplitscreen();
 
     List<String> getSavedUserLogins();
 
@@ -166,6 +169,36 @@ public interface GeyserConfiguration {
         boolean isEnabled();
 
         String getUniqueId();
+    }
+
+
+interface ISplitscreenConfiguration {
+
+        boolean isEnabled();
+
+        /**
+         * Will be removed after splitscreen XUID bug in consoles is fixed
+         * @return Whether to allow mapping of console profiles to Bedrock accounts
+         */
+        @Deprecated
+        boolean isAllowMappingOfProfileUsers();
+
+        /**
+         * Will be removed after splitscreen XUID bug in consoles is fixed
+         */
+        @Deprecated
+        Map<String, ? extends ISplitscreenUserInfo> getUsers();
+    }
+
+    /**
+     * Will be removed after splitscreen XUID bug in consoles is fixed
+     */
+    @Deprecated
+    interface ISplitscreenUserInfo {
+
+        String getBedrockUsername();
+
+        String getXuid();
     }
 
     int getScoreboardPacketThreshold();

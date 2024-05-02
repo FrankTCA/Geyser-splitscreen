@@ -46,7 +46,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -60,6 +62,7 @@ public abstract class GeyserJacksonConfiguration implements GeyserConfiguration 
 
     private BedrockConfiguration bedrock = new BedrockConfiguration();
     private RemoteConfiguration remote = new RemoteConfiguration();
+    private SplitscreenConfiguration splitscreen = new SplitscreenConfiguration();
 
     @JsonProperty("saved-user-logins")
     private List<String> savedUserLogins = Collections.emptyList();
@@ -321,6 +324,28 @@ public abstract class GeyserJacksonConfiguration implements GeyserConfiguration 
                 return uuid;
             }
         }
+    }
+
+    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SplitscreenConfiguration implements ISplitscreenConfiguration {
+        private boolean enabled = false;
+        @JsonProperty("allow-mapping-of-profile-users")
+        private boolean allowMappingOfProfileUsers = false;
+
+        private Map<String, SplitscreenUserInfo> users = new HashMap<>();
+    }
+
+    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SplitscreenUserInfo implements ISplitscreenUserInfo {
+        @AsteriskSerializer.Asterisk()
+        @JsonProperty("bedrock-username")
+        private String bedrockUsername;
+
+        @AsteriskSerializer.Asterisk()
+        @JsonProperty("xuid")
+        private String xuid;
     }
 
     @JsonProperty("scoreboard-packet-threshold")
