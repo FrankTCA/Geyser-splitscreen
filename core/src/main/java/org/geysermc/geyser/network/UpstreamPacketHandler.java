@@ -271,11 +271,12 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
             PackCodec codec = pack.codec();
             ResourcePackManifest.Header header = pack.manifest().header();
             resourcePacksInfo.getResourcePackInfos().add(new ResourcePacksInfoPacket.Entry(
-                    header.uuid().toString(), header.version().toString(), codec.size(), pack.contentKey(),
+                    header.uuid(), header.version().toString(), codec.size(), pack.contentKey(),
                     "", header.uuid().toString(), false, false, false, ""));
         }
         resourcePacksInfo.setForcedToAccept(GeyserImpl.getInstance().getConfig().isForceResourcePacks());
-
+        resourcePacksInfo.setWorldTemplateId(UUID.randomUUID());
+        resourcePacksInfo.setWorldTemplateVersion("*");
         session.sendUpstreamPacket(resourcePacksInfo);
 
         GeyserLocale.loadGeyserLocale(session.locale());
