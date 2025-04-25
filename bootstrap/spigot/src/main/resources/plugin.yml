@@ -1,11 +1,8 @@
-main: org.geysermc.platform.spigot.GeyserSpigotPlugin
-name: ${outputName}-Spigot
-author: ${project.organization.name}
-website: ${project.organization.url}
-version: ${project.version}
-softdepend: ["ViaVersion"]
+main: org.geysermc.geyser.platform.spigot.GeyserSpigotPlugin
+name: ${name}-Spigot
+author: ${author}
+website: ${url}
+version: ${version}
+softdepend: ["ViaVersion", "floodgate"]
 api-version: 1.13
-commands:
-  geyser:
-    description: The main command for Geyser.
-    usage: /geyser help
+folia-supported: true
