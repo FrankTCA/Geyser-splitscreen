@@ -67,9 +67,10 @@ public final class BedrockClientData {
     @JsonProperty(value = "CapeOnClassicSkin")
     private boolean capeOnClassicSkin;
     @JsonProperty(value = "SkinResourcePatch")
-    private String geometryName;
+    private String geometryName = "";
     @JsonProperty(value = "SkinGeometryData")
-    private String geometryData;
+    @ToString.Exclude
+    private String geometryData = "";
     @JsonProperty(value = "PersonaSkin")
     private boolean personaSkin;
     @JsonProperty(value = "PremiumSkin")
@@ -106,12 +107,6 @@ public final class BedrockClientData {
     private String skinColor;
     @JsonProperty(value = "ThirdPartyNameOnly")
     private boolean thirdPartyNameOnly;
-    @JsonProperty(value = "PlayFabId")
-    private String playFabId;
-
-    @JsonIgnore
-    @Setter
-    private String originalString = null;
 
     public DeviceOs getDeviceOs() {
         return deviceOs != null ? deviceOs : DeviceOs.UNKNOWN;

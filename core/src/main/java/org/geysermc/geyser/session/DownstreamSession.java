@@ -25,6 +25,9 @@
 
 package org.geysermc.geyser.session;
 
+import com.nukkitx.protocol.bedrock.BedrockPacket;
+import com.nukkitx.protocol.bedrock.BedrockServerSession;
+import com.nukkitx.protocol.bedrock.packet.DisconnectPacket;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
@@ -32,21 +35,46 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.geysermc.mcprotocollib.network.ClientSession;
 import org.geysermc.mcprotocollib.network.packet.Packet;
 
-@Getter
+import java.net.InetSocketAddress;
+
 @RequiredArgsConstructor
-public class DownstreamSession {
-    private final ClientSession session;
+public class UpstreamSession {
+    @Getter private final BedrockServerSession session;
+    private final int clientId;
 
-    public void sendPacket(@NonNull Packet packet) {
-        this.session.send(packet);
+    @Getter @Setter
+    private boolean initialized = false;
+
+    public void sendPacket(@NonNull BedrockPacket packet) {
+        if (isClosed())
+            return;
+
+        packet.setSenderId(clientId);
+        session.sendPacket(packet);
     }
 
-    public void disconnect(Component reason) {
-        this.session.disconnect(reason);
+    public void sendPacketImmediately(@NonNull BedrockPacket packet) {
+        if (isClosed())
+            return;
+
+        packet.setSenderId(clientId);
+        session.sendPacketImmediately(packet);
     }
 
-    public void disconnect(Component reason, Throwable throwable) {
-        this.session.disconnect(reason, throwable);
+    public void disconnect(String reason) {
+        if (isClosed()) {
+            throw new IllegalStateException("Connection has been closed");
+        }
+
+        DisconnectPacket packet = new DisconnectPacket();
+        packet.setSenderId(clientId);
+
+        if (reason == null) {
+            packet.setMessageSkipped(true);
+            reason = "disconnect.disconnected";
+        }
+        packet.setKickMessage(reason);
+        this.sendPacketImmediately(packet);
     }
 
     public boolean isClosed() {
