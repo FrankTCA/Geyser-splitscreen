@@ -176,6 +176,7 @@ public class Entity implements GeyserEntity {
         setFlag(EntityFlag.HAS_COLLISION, true);
         setFlag(EntityFlag.CAN_SHOW_NAME, true);
         setFlag(EntityFlag.CAN_CLIMB, true);
+        setFlag(EntityFlag.HIDDEN_WHEN_INVISIBLE, true);
         // Let the Java server (or us) supply all sounds for an entity
         setClientSideSilent();
     }
@@ -199,6 +200,7 @@ public class Entity implements GeyserEntity {
         addAdditionalSpawnData(addEntityPacket);
 
         valid = true;
+
         session.sendUpstreamPacket(addEntityPacket);
 
         flagsDirty = false;
@@ -371,6 +373,10 @@ public class Entity implements GeyserEntity {
                 flagsDirty = false;
             }
             dirtyMetadata.apply(entityDataPacket.getMetadata());
+            if (propertyManager != null && propertyManager.hasProperties()) {
+                propertyManager.applyIntProperties(entityDataPacket.getProperties().getIntProperties());
+                propertyManager.applyFloatProperties(entityDataPacket.getProperties().getFloatProperties());
+            }
             session.sendUpstreamPacket(entityDataPacket);
         }
     }
@@ -429,7 +435,7 @@ public class Entity implements GeyserEntity {
     }
 
     public String teamIdentifier() {
-        // experience orbs are the only known entities that do not send an uuid (even though they do have one),
+        // experience orbs were the only known entities that do not send an uuid pre 1.21.5 (even though they do have one),
         // but to be safe in the future it's done in the entity class itself instead of the entity specific one.
         // All entities without an uuid cannot show up in the scoreboard!
         return uuid != null ? uuid.toString() : null;

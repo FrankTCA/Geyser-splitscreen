@@ -25,8 +25,9 @@
 
 package org.geysermc.geyser.translator.inventory.chest;
 
+import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerSlotType;
 import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType;
-import org.geysermc.geyser.inventory.Inventory;
+import org.geysermc.geyser.inventory.Generic9X3Container;
 import org.geysermc.geyser.inventory.holder.BlockInventoryHolder;
 import org.geysermc.geyser.inventory.holder.InventoryHolder;
 import org.geysermc.geyser.level.block.Blocks;
@@ -35,18 +36,17 @@ import org.geysermc.geyser.level.block.property.Properties;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.session.GeyserSession;
 
-public class SingleChestInventoryTranslator extends ChestInventoryTranslator {
+public class SingleChestInventoryTranslator extends ChestInventoryTranslator<Generic9X3Container> {
     private final InventoryHolder holder;
 
-    // TODO add barrel???
     public SingleChestInventoryTranslator(int size) {
         super(size, 27);
         this.holder = new BlockInventoryHolder(Blocks.CHEST.defaultBlockState().withValue(Properties.CHEST_TYPE, ChestType.SINGLE), ContainerType.CONTAINER,
-                Blocks.ENDER_CHEST, Blocks.TRAPPED_CHEST) {
+                Blocks.ENDER_CHEST, Blocks.TRAPPED_CHEST, Blocks.BARREL) {
             @Override
             protected boolean isValidBlock(BlockState blockState) {
-                if (blockState.is(Blocks.ENDER_CHEST)) {
-                    // Can't have double ender chests
+                if (blockState.is(Blocks.ENDER_CHEST) || blockState.is(Blocks.BARREL)) {
+                    // Can't have double ender chests or barrels
                     return true;
                 }
 
@@ -57,17 +57,30 @@ public class SingleChestInventoryTranslator extends ChestInventoryTranslator {
     }
 
     @Override
-    public boolean prepareInventory(GeyserSession session, Inventory inventory) {
-        return holder.prepareInventory(this, session, inventory);
+    public boolean prepareInventory(GeyserSession session, Generic9X3Container container) {
+        return holder.prepareInventory(session, container);
     }
 
     @Override
-    public void openInventory(GeyserSession session, Inventory inventory) {
-        holder.openInventory(this, session, inventory);
+    public void openInventory(GeyserSession session, Generic9X3Container container) {
+        holder.openInventory(session, container);
     }
 
     @Override
-    public void closeInventory(GeyserSession session, Inventory inventory) {
-        holder.closeInventory(this, session, inventory);
+    public void closeInventory(GeyserSession session, Generic9X3Container container, boolean force) {
+        holder.closeInventory(session, container, ContainerType.CONTAINER);
+    }
+
+    @Override
+    public Generic9X3Container createInventory(GeyserSession session, String name, int windowId, org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType containerType) {
+        return new Generic9X3Container(session, name, windowId, this.size, containerType);
+    }
+
+    @Override
+    protected ContainerSlotType slotType(Generic9X3Container generic9X3Container) {
+        if (generic9X3Container.isBarrel()) {
+            return ContainerSlotType.BARREL;
+        }
+        return super.slotType(generic9X3Container);
     }
 }

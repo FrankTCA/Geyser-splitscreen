@@ -61,6 +61,7 @@ import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.BlockEntityUtils;
 import org.geysermc.geyser.util.ChunkUtils;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftTypes;
 import org.geysermc.mcprotocollib.protocol.data.game.chunk.BitStorage;
 import org.geysermc.mcprotocollib.protocol.data.game.chunk.ChunkSection;
 import org.geysermc.mcprotocollib.protocol.data.game.chunk.DataPalette;
@@ -109,19 +110,23 @@ public class JavaLevelChunkWithLightTranslator extends PacketTranslator<Clientbo
         int sectionCount;
         byte[] payload;
         ByteBuf byteBuf = null;
-        GeyserChunkSection[] sections = new GeyserChunkSection[javaChunks.length - (yOffset + (bedrockDimension.minY() >> 4))];
+
+        // calculate the difference between the java dimension minY and the bedrock dimension minY as
+        // the java chunk sections may need to be placed higher up in the bedrock chunk section array
+        int sectionCountDiff = yOffset - (bedrockDimension.minY() >> 4);
+        GeyserChunkSection[] sections = new GeyserChunkSection[chunkSize + sectionCountDiff];
 
         try {
             ByteBuf in = Unpooled.wrappedBuffer(packet.getChunkData());
             boolean extendedCollisionNextSection = false;
             for (int sectionY = 0; sectionY < chunkSize; sectionY++) {
-                ChunkSection javaSection = session.getDownstream().getCodecHelper().readChunkSection(in);
+                ChunkSection javaSection = MinecraftTypes.readChunkSection(in);
                 javaChunks[sectionY] = javaSection.getChunkData();
                 javaBiomes[sectionY] = javaSection.getBiomeData();
                 boolean extendedCollision = extendedCollisionNextSection;
                 boolean thisExtendedCollisionNextSection = false;
 
-                int bedrockSectionY = sectionY + (yOffset - (bedrockDimension.minY() >> 4));
+                int bedrockSectionY = sectionY + sectionCountDiff;
                 int subChunkIndex = sectionY + yOffset;
                 if (bedrockSectionY < 0 || maxBedrockSectionY < bedrockSectionY) {
                     // Ignore this chunk section since it goes outside the bounds accepted by the Bedrock client

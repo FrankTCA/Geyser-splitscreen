@@ -44,7 +44,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.BundleCache;
 import org.geysermc.geyser.util.InventoryUtils;
 import org.geysermc.geyser.util.thirdparty.Fraction;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
+import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
 import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
 
 import java.util.List;
@@ -56,7 +56,7 @@ public final class BundleInventoryTranslator {
      * @return a processed bundle interaction, or null to resume normal transaction handling.
      */
     @Nullable
-    static ItemStackResponse handleBundle(GeyserSession session, InventoryTranslator translator, Inventory inventory, ItemStackRequest request, boolean sendCreativePackets) {
+    static <T extends Inventory> ItemStackResponse handleBundle(GeyserSession session, InventoryTranslator<T> translator, T inventory, ItemStackRequest request, boolean sendCreativePackets) {
         TransferItemStackRequestAction action = null;
         for (ItemStackRequestAction requestAction : request.getActions()) {
             if (requestAction instanceof SwapAction swapAction) {
@@ -308,13 +308,13 @@ public final class BundleInventoryTranslator {
         if (components != null) {
             // NOTE: this seems to be Java-only, so it can technically cause a bundle weight desync,
             // but it'll be so rare we can probably ignore it.
-            List<?> bees = components.get(DataComponentType.BEES);
+            List<?> bees = components.get(DataComponentTypes.BEES);
             if (bees != null && !bees.isEmpty()) {
                 // Bees be heavy, I guess.
                 return Fraction.ONE;
             }
         }
-        return Fraction.getFraction(1, itemStack.getComponentOrFallback(DataComponentType.MAX_STACK_SIZE, itemStack.asItem().defaultMaxStackSize()));
+        return Fraction.getFraction(1, itemStack.getComponentElseGet(DataComponentTypes.MAX_STACK_SIZE, () -> itemStack.asItem().defaultMaxStackSize()));
     }
 
     public static int capacityForItemStack(Fraction bundleWeight, GeyserItemStack itemStack) {

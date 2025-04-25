@@ -29,6 +29,7 @@ import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.cloudburstmc.math.vector.Vector3f;
+import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.session.GeyserSession;
@@ -61,13 +62,14 @@ public class TextDisplayEntity extends DisplayBaseEntity {
     @Override
     protected void initializeMetadata() {
         super.initializeMetadata();
-        // Remove armor stand body
+        // Remove armor stand body / hitbox
+        this.dirtyMetadata.put(EntityDataTypes.HITBOX, NbtMap.EMPTY);
         this.dirtyMetadata.put(EntityDataTypes.SCALE, 0f);
         this.dirtyMetadata.put(EntityDataTypes.NAMETAG_ALWAYS_SHOW, (byte) 1);
     }
 
     public void setText(EntityMetadata<Component, ?> entityMetadata) {
-        this.dirtyMetadata.put(EntityDataTypes.NAME, MessageTranslator.convertMessage(entityMetadata.getValue()));
+        this.dirtyMetadata.put(EntityDataTypes.NAME, MessageTranslator.convertMessage(entityMetadata.getValue(), session.locale()));
         calculateLineCount(entityMetadata.getValue());
     }
 
